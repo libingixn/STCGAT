@@ -84,7 +84,7 @@ criterion = nn.MSELoss()
 criterion_SoftDTW = SoftDTW(use_cuda=False, gamma=args.gamma)
 
 
-def res(model, test_loader, graph):
+def res(model, test_loader, graph, flow_norm):
     model.eval()
 
     pred = []
@@ -125,13 +125,13 @@ def res(model, test_loader, graph):
                                             args.mae_thresh, args.mape_thresh)
         maes.append(mae)
         rmses.append(rmse)
-        mapes.append(mape*100)
+        mapes.append(mape)
         print('Horizon {}, MAE:{:.2f}, RMSE: {:.2f}, MAPE: {:.2f}%'.format(i + 1, mae, rmse, mape * 100))
 
-    return np.mean(maes), np.mean(rmses), np.mean(mapes)
+    return np.mean(maes), np.mean(rmses), np.mean(mapes) *100
 
 
-def test(model, test_loader, graph):
+def test(model, test_loader, graph, flow_norm):
     model.eval()
 
     pred = []
@@ -186,14 +186,14 @@ def test(model, test_loader, graph):
         # mae, rmse, mape, r2_new = Evaluation.total_3(np.round(label[:, :, i]), np.round(pred[:, :, i]))
         maes.append(mae)
         rmses.append(rmse)
-        mapes.append(mape*100)
+        mapes.append(mape)
 
         print('Horizon {}, MAE:{:.2f}, RMSE: {:.2f}, MAPE: {:.2f}%'.format(i + 1, mae, rmse, mape*100))
 
-    return np.mean(maes), np.mean(rmses), np.mean(mapes)
+    return np.mean(maes), np.mean(rmses), np.mean(mapes)*100
 
 
-def train(model, train_loader, graph):
+def train(model, train_loader, graph, flow_norm):
 
     RESUME = False  # Whether to continue breakpoint training
     start_epoch = -1
@@ -256,7 +256,7 @@ def train(model, train_loader, graph):
                                                                              1000 * total_train_loss / len(train_data),
                                                                              (end_time - start_time) / 60))
         if epoch % 10 == 0 and epoch != 0:
-            mae, rmse, mape = res(model, val_loader, graph)
+            mae, rmse, mape = res(model, val_loader, graph, flow_norm)
             print('Average Horizon, MAE:{:.2f}, RMSE: {:.2f}, MAPE: {:.2f}%'.format(mae, rmse, mape))
 
         loss_values.append(total_train_loss)
@@ -290,7 +290,7 @@ def train(model, train_loader, graph):
     model.load_state_dict(torch.load('best_{}.pkl'.format(DATASET)))
 
     # Testing
-    mae, rmse, mape = test(model, test_loader, graph)
+    mae, rmse, mape = test(model, test_loader, graph, flow_norm)
     print('Average Horizon, MAE:{:.2f}, RMSE: {:.2f}, MAPE: {:.2f}%'.format(mae, rmse, mape))
 
     visualize_result(h5_file="result/{}/data_result/result.h5".format(DATASET),
@@ -311,7 +311,7 @@ if __name__ == "__main__":
 
     test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=False, drop_last=False, num_workers=8)
     if Mode == 'Train':
-        train(model=model, train_loader=train_loader, graph=graph)
+        train(model=model, train_loader=train_loader, graph=graph, flow_norm=flow_norm)
     elif Mode == 'Test':
         files = glob.glob('*.pkl')
         for file in files:
@@ -319,7 +319,7 @@ if __name__ == "__main__":
                 print('Loading the best epoch.')
                 model.load_state_dict(torch.load('best_{}.pkl'.format(DATASET)))
                 # Testing
-                mae, rmse, mape = test(model, test_loader, graph)
+                mae, rmse, mape = test(model, test_loader, graph, flow_norm)
                 print('Average Horizon, MAE:{:.2f}, RMSE: {:.2f}, MAPE: {:.2f}%'.format(mae, rmse, mape))
                 break
             else:
