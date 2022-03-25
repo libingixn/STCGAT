@@ -210,7 +210,6 @@ def train(model, train_loader, graph, flow_norm):
         start_epoch = checkpoint['epoch']
 
     # Train model
-    loss_values = []
     bad_counter = 0
     best = args.epochs + 1
     best_epoch = 0
@@ -259,12 +258,12 @@ def train(model, train_loader, graph, flow_norm):
             mae, rmse, mape = res(model, val_loader, graph, flow_norm)
             print('Average Horizon, MAE:{:.2f}, RMSE: {:.2f}, MAPE: {:.2f}%'.format(mae, rmse, mape))
 
-        loss_values.append(total_train_loss)
+        average_loss = total_train_loss/num
 
         torch.save(model.state_dict(), '{}.pkl'.format(epoch))
 
-        if loss_values[-1] < best:
-            best = loss_values[-1]
+        if average_loss < best:
+            best = average_loss
             best_epoch = epoch
             bad_counter = 0
         else:
