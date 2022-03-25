@@ -105,7 +105,7 @@ def res(model, test_loader, graph, flow_norm):
             target = recover_data(flow_norm[0], flow_norm[1],
                                   data[1].view(B, T, -1).transpose(0, 1).numpy())
 
-            pbar.set_description("Test")
+            pbar.set_description("Val")
 
             p = np.swapaxes(prediction, 0, 1)
             q = np.swapaxes(target, 0, 1)
